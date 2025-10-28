@@ -1,0 +1,51 @@
+services:
+  # Web Service (Django with Daphne for WebSocket)
+  - type: web
+    name: arab-chat
+    runtime: python
+    plan: free
+    buildCommand: "chmod +x mysite/build.sh && mysite/build.sh"
+    startCommand: "cd mysite && daphne -b 0.0.0.0 -p $PORT mysite.asgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: SECURE_SSL_REDIRECT
+        value: "True"
+      - key: SESSION_COOKIE_SECURE
+        value: "True"
+      - key: CSRF_COOKIE_SECURE
+        value: "True"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: arab-chat-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: arab-chat-redis
+          property: connectionString
+    healthCheckPath: /
+
+  # Redis for WebSocket (Channels)
+  - type: redis
+    name: arab-chat-redis
+    plan: free
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+
+databases:
+  # PostgreSQL Database
+  - name: arab-chat-db
+    plan: free
+    databaseName: arabchat
+    user: arabchat
