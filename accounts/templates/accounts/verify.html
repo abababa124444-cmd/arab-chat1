@@ -1,0 +1,16 @@
+{% extends 'core/base.html' %}
+{% block title %}التحقق من الرقم{% endblock %}
+{% block content %}
+<section>
+  <h2>أدخل رمز التحقق</h2>
+  <p>تم إرسال رمز إلى واتساب: <strong>{{ phone }}</strong></p>
+  <form method="post" action="{% url 'accounts:verify' %}" style="display:flex; gap:.5rem; align-items:center;">
+    {% csrf_token %}
+    {{ form.phone }}
+    {{ form.name }}
+    <input name="code" maxlength="6" placeholder="أدخل الرمز" required style="width: 200px; padding:.5rem;">
+    <button type="submit">تأكيد</button>
+  </form>
+  <p class="muted">إذا لم يصلك الرمز خلال دقيقة، حاول إعادة الإرسال من صفحة التسجيل.</p>
+</section>
+{% endblock %}

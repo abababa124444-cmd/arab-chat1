@@ -1,0 +1,248 @@
+{% load static %}
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>{% block title %}Arab Chat{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{% static 'core/icons/icon-192.png' %}">
+    <link rel="shortcut icon" type="image/png" href="{% static 'core/icons/icon-192.png' %}">
+    
+    <!-- Styles & Manifest -->
+    <link rel="stylesheet" href="{% static 'core/styles.css' %}">
+    <link rel="manifest" href="{% static 'core/manifest.webmanifest' %}">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#25D366">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="عرب شات">
+    <link rel="apple-touch-icon" href="{% static 'core/icons/icon-192.png' %}">
+    <meta name="description" content="تطبيق دردشة عربي - Arab Chat">
+    <style>
+      /* Ensure full width on mobile */
+      html, body {
+        width: 100% !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      
+  @media (max-width: 768px) {
+    html, body {
+      padding-top: env(safe-area-inset-top, 0px) !important;
+    }
+    
+    .header {
+      padding-top: 1.5rem !important;
+      padding-bottom: 0.75rem !important;
+      padding-left: 0.75rem !important;
+      padding-right: 0.75rem !important;
+      margin-top: 0 !important;
+    }
+    
+    .main {
+      padding-top: 1rem !important;
+    }
+        
+        .whatsapp-layout { display: flex; flex-direction: column; }
+        .chat-sidebar { max-height: none; }
+        
+        * {
+          max-width: 100% !important;
+          box-sizing: border-box !important;
+        }
+        
+        .container,
+        section,
+        .main {
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="container header" style="padding-top: 1rem !important; padding-bottom: 0.75rem !important;">
+      <div class="brand">
+        <a class="brand-link" href="/">Arab Chat</a>
+      </div>
+      <nav class="nav" id="mainNav">
+        <a class="nav-link" href="/">الرئيسية</a>
+        {% if request.user.is_authenticated %}
+          <a class="nav-link" href="{% url 'core:room_list' %}">💬 الغرف</a>
+          <a class="nav-link" href="{% url 'core:dm_list' %}">📨 الرسائل</a>
+          <a class="nav-link" href="{% url 'accounts:users_list' %}">👥 المستخدمون</a>
+          <a class="nav-link" href="{% url 'accounts:friends_list' %}">⭐ الأصدقاء</a>
+          <a class="btn danger" href="{% url 'accounts:logout' %}">خروج</a>
+        {% else %}
+          <a class="btn" href="{% url 'accounts:signup' %}">إنشاء حساب</a>
+        {% endif %}
+        <button id="installBtn" type="button" class="btn" style="display:none;">📲 تثبيت التطبيق</button>
+      </nav>
+    </header>
+    <main class="container main">
+      {% if messages %}
+        <ul class="messages">
+          {% for message in messages %}
+            <li class="message {{ message.tags|default:'' }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="container muted">
+      &copy; {{ now|default:2025 }}
+    </footer>
+    <script>
+      // Register Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(function(registration) {
+              console.log('Service Worker registered:', registration.scope);
+            })
+            .catch(function(error) {
+              console.log('Service Worker registration failed:', error);
+            });
+        });
+      }
+      
+      // Handle PWA Install - Enhanced Version
+      (function(){
+        let deferredPrompt = null;
+        const btn = document.getElementById('installBtn');
+        
+        if (!btn) {
+          console.warn('Install button not found');
+          return;
+        }
+        
+        console.log('PWA Install script loaded');
+        console.log('Protocol:', window.location.protocol);
+        console.log('Hostname:', window.location.hostname);
+        
+        // Check if already installed (standalone mode)
+        if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+          console.log('App already installed in standalone mode');
+          btn.style.display = 'none';
+          return;
+        }
+        
+        // Check iOS standalone mode
+        if (window.navigator.standalone === true) {
+          console.log('App already installed (iOS standalone)');
+          btn.style.display = 'none';
+          return;
+        }
+        
+        // Listen for beforeinstallprompt event (HTTPS/localhost only)
+        window.addEventListener('beforeinstallprompt', (e) => {
+          console.log('✅ beforeinstallprompt event fired - Auto install available!');
+          e.preventDefault();
+          deferredPrompt = e;
+          
+          // Show button with green background for real install
+          btn.style.display = 'inline-flex';
+          btn.innerHTML = '📲 تثبيت التطبيق';
+          btn.style.background = '#25D366';
+          btn.style.fontWeight = 'bold';
+          btn.title = 'تثبيت التطبيق كـ PWA';
+        });
+        
+        // On HTTP (not HTTPS), show manual install button after delay
+        setTimeout(() => {
+          if (!deferredPrompt && window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
+            console.log('⚠️ Running on HTTP - Auto install not available');
+            // Show button with different style for manual instructions
+            btn.style.display = 'inline-flex';
+            btn.innerHTML = '📱 تثبيت يدوي';
+            btn.style.background = '#128C7E';
+            btn.title = 'عرض تعليمات التثبيت';
+          }
+        }, 2000);
+        
+        // Handle button click
+        btn.addEventListener('click', async () => {
+          console.log('Install button clicked');
+          
+          // Try PWA auto install (works on HTTPS/localhost)
+          if (deferredPrompt) {
+            console.log('✅ Using deferred prompt for PWA install');
+            try {
+              deferredPrompt.prompt();
+              const choice = await deferredPrompt.userChoice;
+              console.log('User choice:', choice.outcome);
+              
+              if (choice.outcome === 'accepted') {
+                console.log('✅ User accepted the install');
+                btn.innerHTML = '✅ جاري التثبيت...';
+                btn.disabled = true;
+              } else {
+                console.log('❌ User dismissed the install');
+                btn.innerHTML = '📲 تثبيت التطبيق';
+              }
+              deferredPrompt = null;
+            } catch (error) {
+              console.error('Install prompt error:', error);
+            }
+          } else {
+            // Manual install instructions (fallback for HTTP/iOS)
+            console.log('ℹ️ No deferred prompt, showing manual instructions');
+            
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
+            
+            let instructions = '📱 كيفية تثبيت التطبيق:\n\n';
+            
+            if (isIOS) {
+              instructions += 'Safari (iOS):\n' +
+                            '1. اضغط زر المشاركة (☐↑) في الأسفل\n' +
+                            '2. اختر "Add to Home Screen"\n' +
+                            '3. اضغط "Add" في الأعلى\n\n' +
+                            '✅ سيظهر التطبيق على الشاشة الرئيسية!';
+            } else if (isAndroid) {
+              instructions += 'Chrome (Android):\n' +
+                            '1. اضغط القائمة (⋮) في الأعلى\n' +
+                            '2. اختر "Add to Home Screen" أو "Install App"\n' +
+                            '3. اضغط "Install"\n\n' +
+                            '✅ سيظهر التطبيق على الشاشة الرئيسية!';
+            } else {
+              instructions += 'المتصفح (Desktop):\n' +
+                            '1. اضغط القائمة في المتصفح\n' +
+                            '2. اختر "Install Arab Chat" أو "Add to Apps"\n\n' +
+                            'أو:\n' +
+                            '• ابحث عن أيقونة التثبيت (+) في شريط العنوان\n\n' +
+                            '✅ سيصبح التطبيق متاحاً في قائمة التطبيقات!';
+            }
+            
+            alert(instructions);
+          }
+        });
+        
+        // Handle successful installation
+        window.addEventListener('appinstalled', () => {
+          console.log('✅ App installed successfully!');
+          deferredPrompt = null;
+          btn.innerHTML = '✅ تم التثبيت';
+          btn.style.background = '#25D366';
+          btn.disabled = true;
+          
+          // Hide button after 3 seconds
+          setTimeout(() => {
+            btn.style.opacity = '0';
+            btn.style.transition = 'opacity 0.5s';
+            setTimeout(() => btn.style.display = 'none', 500);
+          }, 3000);
+        });
+        
+        // Log install capability
+        console.log('PWA Install capability:', deferredPrompt ? 'Available' : 'Not yet / Not supported');
+      })();
+    </script>
+  </body>
+</html>
+

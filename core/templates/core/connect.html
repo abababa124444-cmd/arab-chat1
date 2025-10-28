@@ -1,0 +1,70 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}اتصال عبر الشبكة المحلية{% endblock %}
+{% block content %}
+<section>
+  <h2 style="margin-top:0">اتصال عبر الشبكة المحلية</h2>
+  <p>افتح الكاميرا على هاتفك وامسح رمز QR التالي لفتح Arab Chat على جهازك:</p>
+  <div id="qrcode" style="display:inline-block; padding:16px; background:#fff; border:2px solid var(--border); border-radius:.75rem; line-height:0;"></div>
+  <p class="muted">الرابط الرئيسي: <a href="{{ primary_url }}">{{ primary_url }}</a></p>
+  <div class="row" style="margin:.75rem 0;">
+    <a class="btn" href="{{ primary_url }}" target="_blank" rel="noopener">فتح الرابط</a>
+    <button class="btn" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText('{{ primary_url }}')">نسخ الرابط</button>
+    <button id="installBtn" class="btn" type="button" style="display:none;">تثبيت التطبيق</button>
+  </div>
+  <h3>عناوين بديلة</h3>
+  <ul>
+    {% for u in candidate_urls %}
+      <li><a href="{{ u }}">{{ u }}</a></li>
+    {% endfor %}
+  </ul>
+  <p class="muted">تأكد من فتح منفذ 9001 في الجدار الناري. يمكنك إضافة قاعدة باسم "Django 9001".</p>
+</section>
+<script src="{% static 'core/qrcode.min.js' %}"></script>
+<script>
+  const url = "{{ primary_url }}";
+  if (window.QRCode) {
+    new QRCode('qrcode').makeCode(url);
+  } else {
+    document.getElementById('qrcode').innerHTML = '<div style="padding:1rem;">تعذر تحميل مكتبة QR. افتح الرابط أعلاه مباشرة أو حدّث الصفحة.</div>';
+  }
+  // Enlarge the canvas for better scanability
+  const c = document.querySelector('#qrcode canvas');
+  if (c) {
+    function scaleQR() {
+      // Target very large size but keep integer multiple for sharpness
+      const intrinsic = c.width; // canvas internal width
+      const maxTarget = Math.min(1024, Math.max(640, window.innerWidth - 80));
+      const factor = Math.max(4, Math.floor(maxTarget / intrinsic));
+      const target = intrinsic * factor;
+      c.style.width = target + 'px';
+      c.style.height = target + 'px';
+      c.style.imageRendering = 'pixelated';
+    }
+    scaleQR();
+    window.addEventListener('resize', scaleQR);
+  }
+
+  // PWA install prompt handling
+  let deferredPrompt = null;
+  const installBtn = document.getElementById('installBtn');
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (installBtn) installBtn.style.display = 'inline-flex';
+  });
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      if (outcome !== 'accepted') {
+        // keep the button visible for retry
+      } else {
+        installBtn.style.display = 'none';
+      }
+    });
+  }
+</script>
+{% endblock %}

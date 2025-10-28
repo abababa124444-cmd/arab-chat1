@@ -1,0 +1,25 @@
+{% extends 'core/base.html' %}
+{% block title %}غرف الدردشة{% endblock %}
+{% block content %}
+  <section>
+    <h2 style="margin-top:0">غرف الدردشة</h2>
+    <form method="post" class="row">
+      {% csrf_token %}
+      <input name="name" required placeholder="اسم الغرفة (مثال: العامة)" aria-label="اسم الغرفة">
+      <button type="submit" class="btn" role="button">إنشاء / دخول</button>
+    </form>
+    <ul class="card-list" style="margin-top:1rem;">
+      {% for r in rooms %}
+        <li class="card">
+          <div>
+            <strong>{{ r.name }}</strong>
+            <div class="muted">أُنشئت {{ r.created_at|timesince }} مضت</div>
+          </div>
+          <a href="{% url 'core:room_detail' slug=r.slug %}" class="btn" role="button">دخول</a>
+        </li>
+      {% empty %}
+        <li class="muted">لا توجد غرف بعد. أنشئ أول غرفة الآن.</li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endblock %}

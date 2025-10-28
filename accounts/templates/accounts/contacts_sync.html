@@ -1,0 +1,35 @@
+{% extends 'core/base.html' %}
+{% block title %}مزامنة جهات الاتصال{% endblock %}
+{% block content %}
+<section>
+  <h2 style="margin-top:0">مزامنة جهات الاتصال</h2>
+  <p class="muted">للعرض السريع، الصق أرقام جهات الاتصال (رقم بكل سطر). مثال رقمك: <code>{{ sample }}</code></p>
+  <form method="post" class="row" style="flex-direction:column;">
+    {% csrf_token %}
+    <textarea name="numbers" rows="6" placeholder="+9665...
++2010...
++9715..." style="width:100%;"></textarea>
+    <div>
+      <button type="submit" class="btn" role="button">بحث عن الأصدقاء</button>
+      <a href="/" class="btn" role="button" style="margin-inline-start:.5rem;">تخطي الآن</a>
+    </div>
+  </form>
+
+  {% if matches %}
+    <h3>أصدقاء على Arab Chat ({{ matches|length }})</h3>
+    <ul class="card-list">
+      {% for m in matches %}
+        <li class="card">
+          <div>
+            <strong>{{ m.name }}</strong>
+            <div class="muted">{{ m.phone }}</div>
+          </div>
+          <a class="btn" href="{% url 'core:dm_thread' user_id=m.user_id %}">💬 دردشة</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% elif request.method == 'POST' %}
+    <p class="muted" style="text-align: center; padding: 2rem;">لم يتم العثور على أصدقاء مسجلين في Arab Chat.</p>
+  {% endif %}
+</section>
+{% endblock %}

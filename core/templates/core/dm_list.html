@@ -1,0 +1,36 @@
+{% extends 'core/base.html' %}
+{% block title %}الرسائل الخاصة{% endblock %}
+{% block content %}
+<section>
+  <h2 style="margin-top:0">الرسائل الخاصة</h2>
+  {% if threads %}
+    <ul class="card-list">
+      {% for t in threads %}
+        {% if request.user.id == t.user1_id %}
+          {% with other=t.user2 %}
+            <li class="card">
+              <div>
+                <strong>{{ other.profile.name|default:other.username }}</strong>
+                <div class="muted">بدأت {{ t.created_at|timesince }} مضت</div>
+              </div>
+              <a class="btn" href="{% url 'core:dm_thread' user_id=other.id %}">فتح</a>
+            </li>
+          {% endwith %}
+        {% else %}
+          {% with other=t.user1 %}
+            <li class="card">
+              <div>
+                <strong>{{ other.profile.name|default:other.username }}</strong>
+                <div class="muted">بدأت {{ t.created_at|timesince }} مضت</div>
+              </div>
+              <a class="btn" href="{% url 'core:dm_thread' user_id=other.id %}">فتح</a>
+            </li>
+          {% endwith %}
+        {% endif %}
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">لا توجد رسائل خاصة بعد. افتح حساب صديقك وابدأ محادثة.</p>
+  {% endif %}
+</section>
+{% endblock %}

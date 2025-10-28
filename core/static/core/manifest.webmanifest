@@ -1,0 +1,45 @@
+{
+  "name": "عرب شات - Arab Chat",
+  "short_name": "عرب شات",
+  "description": "تطبيق دردشة عربي - Arabic Chat Application",
+  "start_url": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "ar",
+  "dir": "rtl",
+  "theme_color": "#25D366",
+  "background_color": "#ffffff",
+  "categories": ["social", "communication"],
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "/static/core/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/static/core/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/static/core/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/static/core/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "غرف الدردشة",
+      "short_name": "الغرف",
+      "description": "فتح قائمة غرف الدردشة",
+      "url": "/rooms/",
+      "icons": [{ "src": "/static/core/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "الرسائل الخاصة",
+      "short_name": "الرسائل",
+      "description": "فتح الرسائل الخاصة",
+      "url": "/dm/",
+      "icons": [{ "src": "/static/core/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "الأصدقاء",
+      "short_name": "الأصدقاء",
+      "description": "عرض قائمة الأصدقاء",
+      "url": "/accounts/friends/",
+      "icons": [{ "src": "/static/core/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

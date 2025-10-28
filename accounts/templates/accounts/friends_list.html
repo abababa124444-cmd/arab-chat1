@@ -1,0 +1,182 @@
+{% extends 'core/base.html' %}
+{% block title %}الأصدقاء{% endblock %}
+{% block content %}
+<section>
+  <h2 style="margin-top:0">الأصدقاء</h2>
+  
+  <!-- Tabs Navigation -->
+  <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 2px solid #eee; flex-wrap: wrap;">
+    <button class="tab-btn active" data-tab="friends" style="padding: 0.75rem 1.5rem; border: none; background: none; cursor: pointer; border-bottom: 3px solid #25D366;">
+      👥 الأصدقاء ({{ friends_count }})
+    </button>
+    <button class="tab-btn" data-tab="pending" style="padding: 0.75rem 1.5rem; border: none; background: none; cursor: pointer;">
+      📬 الطلبات ({{ pending_received|length }})
+    </button>
+    <button class="tab-btn" data-tab="sent" style="padding: 0.75rem 1.5rem; border: none; background: none; cursor: pointer;">
+      ⏳ المرسلة ({{ pending_sent|length }})
+    </button>
+    <button class="tab-btn" data-tab="blocked" style="padding: 0.75rem 1.5rem; border: none; background: none; cursor: pointer;">
+      🚫 المحظورين ({{ blocked|length }})
+    </button>
+  </div>
+  
+  <!-- Friends Tab -->
+  <div class="tab-content" id="friends-tab">
+    <h3>الأصدقاء ({{ friends_count }})</h3>
+    {% if friends %}
+      <ul class="card-list">
+        {% for friend in friends %}
+          <li class="card">
+            <div style="flex: 1;">
+              <strong>{{ friend.profile.name }}</strong>
+              <div class="muted">{{ friend.profile.phone }}</div>
+            </div>
+            <div class="row" style="gap: 0.5rem;">
+              <a class="btn" href="{% url 'core:dm_thread' user_id=friend.id %}" title="دردشة">💬 دردشة</a>
+              <form method="post" action="{% url 'accounts:remove_friend' user_id=friend.id %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="background: #FF6B6B;" title="إزالة" onclick="return confirm('متأكد من إزالة {{ friend.profile.name }} من الأصدقاء؟')">
+                  🗑️ إزالة
+                </button>
+              </form>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted" style="text-align: center; padding: 2rem;">
+        لا يوجد أصدقاء حالياً. <a href="{% url 'accounts:users_list' %}">ابحث عن أصدقاء</a>
+      </p>
+    {% endif %}
+  </div>
+  
+  <!-- Pending Requests Tab -->
+  <div class="tab-content" id="pending-tab" style="display: none;">
+    <h3>طلبات الصداقة المستلمة ({{ pending_received|length }})</h3>
+    {% if pending_received %}
+      <ul class="card-list">
+        {% for friendship in pending_received %}
+          <li class="card">
+            <div style="flex: 1;">
+              <strong>{{ friendship.from_user.profile.name }}</strong>
+              <div class="muted">{{ friendship.from_user.profile.phone }}</div>
+              <div class="muted" style="font-size: 0.85rem;">{{ friendship.created_at|timesince }} مضت</div>
+            </div>
+            <div class="row" style="gap: 0.5rem;">
+              <form method="post" action="{% url 'accounts:accept_friend_request' friendship_id=friendship.id %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="background: #25D366;" title="قبول">
+                  ✓ قبول
+                </button>
+              </form>
+              <form method="post" action="{% url 'accounts:reject_friend_request' friendship_id=friendship.id %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="background: #FF6B6B;" title="رفض">
+                  ✗ رفض
+                </button>
+              </form>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted" style="text-align: center; padding: 2rem;">
+        لا توجد طلبات صداقة جديدة.
+      </p>
+    {% endif %}
+  </div>
+  
+  <!-- Sent Requests Tab -->
+  <div class="tab-content" id="sent-tab" style="display: none;">
+    <h3>طلبات الصداقة المرسلة ({{ pending_sent|length }})</h3>
+    {% if pending_sent %}
+      <ul class="card-list">
+        {% for friendship in pending_sent %}
+          <li class="card">
+            <div style="flex: 1;">
+              <strong>{{ friendship.to_user.profile.name }}</strong>
+              <div class="muted">{{ friendship.to_user.profile.phone }}</div>
+              <div class="muted" style="font-size: 0.85rem;">⏳ قيد الانتظار • {{ friendship.created_at|timesince }} مضت</div>
+            </div>
+            <div class="row" style="gap: 0.5rem;">
+              <form method="post" action="{% url 'accounts:cancel_friend_request' friendship_id=friendship.id %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="background: #888;" title="إلغاء">
+                  ✗ إلغاء
+                </button>
+              </form>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted" style="text-align: center; padding: 2rem;">
+        لم ترسل أي طلبات صداقة.
+      </p>
+    {% endif %}
+  </div>
+  
+  <!-- Blocked Tab -->
+  <div class="tab-content" id="blocked-tab" style="display: none;">
+    <h3>المستخدمون المحظورون ({{ blocked|length }})</h3>
+    {% if blocked %}
+      <ul class="card-list">
+        {% for friendship in blocked %}
+          <li class="card">
+            <div style="flex: 1;">
+              <strong>{{ friendship.to_user.profile.name }}</strong>
+              <div class="muted">{{ friendship.to_user.profile.phone }}</div>
+              <div class="muted" style="font-size: 0.85rem;">🚫 محظور • {{ friendship.created_at|timesince }} مضت</div>
+            </div>
+            <div class="row" style="gap: 0.5rem;">
+              <form method="post" action="{% url 'accounts:unblock_user' user_id=friendship.to_user.id %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="background: #128C7E;" title="إلغاء الحظر">
+                  🔓 إلغاء الحظر
+                </button>
+              </form>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted" style="text-align: center; padding: 2rem;">
+        لم تقم بحظر أي مستخدمين.
+      </p>
+    {% endif %}
+  </div>
+  
+  <div style="margin-top: 2rem; text-align: center;">
+    <a href="{% url 'accounts:users_list' %}" class="btn" style="background: #128C7E;">
+      🔍 ابحث عن أصدقاء
+    </a>
+  </div>
+</section>
+
+<script>
+// Tabs functionality
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    // Remove active from all
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('active');
+      b.style.borderBottom = 'none';
+    });
+    
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(t => {
+      t.style.display = 'none';
+    });
+    
+    // Activate clicked
+    this.classList.add('active');
+    this.style.borderBottom = '3px solid #25D366';
+    
+    // Show corresponding tab
+    const tabName = this.getAttribute('data-tab');
+    document.getElementById(tabName + '-tab').style.display = 'block';
+  });
+});
+</script>
+{% endblock %}
+

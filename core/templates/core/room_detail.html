@@ -1,0 +1,143 @@
+{% extends 'core/base.html' %}
+{% block title %}غرفة: {{ room.name }}{% endblock %}
+{% block content %}
+  <div class="whatsapp-layout">
+    <aside class="chat-sidebar" style="border:1px solid var(--border); border-radius:.75rem; overflow:hidden; background:#fff;">
+      <div style="padding:.75rem 1rem; border-bottom:1px solid var(--border); font-weight:600;">المحادثات</div>
+      <ul class="card-list" style="margin:0; border-bottom:1px solid var(--border);">
+        {% for r in rooms %}
+          <li class="chat-item">
+            <a href="{% url 'core:room_detail' slug=r.slug %}" style="flex:1; display:flex; align-items:center; gap:.75rem; text-decoration:none; color:inherit;">
+              <div class="avatar"></div>
+              <div style="flex:1; min-width:0;">
+                <div class="title" style="display:flex; align-items:center; justify-content:space-between; gap:.5rem;">
+                  <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.name }}</span>
+                  <span class="unread-badge">1</span>
+                </div>
+                <div class="meta">آخر تحديث: {{ r.created_at|timesince }} مضت</div>
+              </div>
+            </a>
+          </li>
+        {% empty %}
+          <li class="muted" style="padding:1rem;">لا توجد محادثات بعد.</li>
+        {% endfor %}
+      </ul>
+      <div style="padding: .75rem 1rem;">
+        <form method="post" action="{% url 'core:room_list' %}" class="row">
+          {% csrf_token %}
+          <input name="name" required placeholder="إنشاء غرفة جديدة">
+          <button type="submit" class="btn" role="button">إنشاء</button>
+        </form>
+      </div>
+    </aside>
+
+    <section class="chat-area">
+      <h2 style="margin-top:0">الغرفة: {{ room.name }}</h2>
+      <ul id="messages" class="chat-list">
+        {% for m in messages %}
+          {% with me_name=request.user.profile.name|default:'' %}
+            {% if request.user.is_authenticated and me_name and m.author_name == me_name %}
+              <li class="bubble me" data-id="{{ m.id }}"><strong>{{ m.author_name }}</strong>: {{ m.content }}<span class="meta">{{ m.created_at|time:"H:i" }}</span></li>
+            {% else %}
+              <li class="bubble" data-id="{{ m.id }}"><strong>{{ m.author_name }}</strong>: {{ m.content }}<span class="meta">{{ m.created_at|time:"H:i" }}</span></li>
+            {% endif %}
+          {% endwith %}
+        {% empty %}
+          <li class="muted">لا رسائل بعد.</li>
+        {% endfor %}
+      </ul>
+
+      <form method="post" class="chat-form">
+        {% csrf_token %}
+        <input name="author_name" placeholder="اسمك" value="{% if request.user.is_authenticated %}{{ request.user.profile.name|default:'' }}{% endif %}" style="max-width:220px;">
+        <input name="content" required placeholder="اكتب رسالتك">
+        <button type="submit" class="btn" role="button">إرسال</button>
+      </form>
+    </section>
+  </div>
+
+  <!-- Connection Status Indicator -->
+  <div id="connectionStatus" class="connection-status"></div>
+
+  <script>
+    const list = document.getElementById('messages');
+    const form = document.querySelector('form');
+    const statusIndicator = document.getElementById('connectionStatus');
+    
+    // WebSocket Connection
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/chat/{{ room.slug }}/`;
+    const chatSocket = new WebSocket(wsUrl);
+    
+    chatSocket.onopen = function() {
+      console.log('WebSocket connected');
+      statusIndicator.textContent = '';
+      statusIndicator.classList.remove('disconnected');
+    };
+    
+    chatSocket.onmessage = function(e) {
+      const data = JSON.parse(e.data);
+      addMessage(data);
+    };
+    
+    chatSocket.onerror = function(error) {
+      console.error('WebSocket error:', error);
+      statusIndicator.textContent = '⚠️ خطأ في الاتصال';
+      statusIndicator.classList.add('disconnected');
+    };
+    
+    chatSocket.onclose = function() {
+      console.log('WebSocket disconnected');
+      statusIndicator.textContent = '🔄 غير متصل - إعادة الاتصال...';
+      statusIndicator.classList.add('disconnected');
+      // Reconnect after 3 seconds
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    };
+    
+    function addMessage(data) {
+      const li = document.createElement('li');
+      li.dataset.id = data.id;
+      
+      const strong = document.createElement('strong');
+      strong.textContent = data.author_name;
+      li.appendChild(strong);
+      li.appendChild(document.createTextNode(': ' + data.content));
+      
+      // Style based on current user
+      const meName = document.querySelector('input[name="author_name"]').value.trim();
+      li.className = (data.author_name === meName) ? 'bubble me new' : 'bubble new';
+      
+      const meta = document.createElement('span');
+      meta.className = 'meta';
+      try { meta.textContent = new Date(data.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); } catch {}
+      li.appendChild(meta);
+      
+      list.appendChild(li);
+      list.scrollTop = list.scrollHeight;
+      
+      // Remove 'new' class after animation
+      setTimeout(() => li.classList.remove('new'), 300);
+    }
+    
+    // Handle form submission
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const author_name = form.querySelector('input[name="author_name"]').value;
+      const content = form.querySelector('input[name="content"]').value;
+      
+      if (content && chatSocket.readyState === WebSocket.OPEN) {
+        chatSocket.send(JSON.stringify({
+          type: 'chat_message',
+          author_name: author_name,
+          content: content
+        }));
+        
+        form.querySelector('input[name="content"]').value = '';
+      }
+    });
+  </script>
+{% endblock %}
+

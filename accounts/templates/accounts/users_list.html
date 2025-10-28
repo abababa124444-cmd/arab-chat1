@@ -1,0 +1,126 @@
+{% extends 'core/base.html' %}
+{% block title %}المستخدمون{% endblock %}
+{% block content %}
+<section>
+  <h2 style="margin-top:0">المستخدمون {% if total_count %}({{ total_count }}){% endif %}</h2>
+  
+  <!-- Search Form -->
+  <form method="get" style="margin-bottom: 1.5rem;">
+    <div class="row" style="gap: 0.5rem;">
+      <input 
+        type="search" 
+        name="q" 
+        value="{{ query }}" 
+        placeholder="🔍 ابحث بالاسم أو رقم الهاتف..." 
+        style="flex: 1; padding: 0.75rem;"
+        autofocus
+      >
+      <button type="submit" class="btn">بحث</button>
+      {% if query %}
+        <a href="{% url 'accounts:users_list' %}" class="btn" style="background: #ccc;">مسح</a>
+      {% endif %}
+    </div>
+  </form>
+  
+  {% if query and not users %}
+    <p class="muted" style="text-align: center; padding: 2rem;">
+      لم يتم العثور على مستخدمين بحث "{{ query }}"
+    </p>
+  {% elif users %}
+    <ul class="card-list">
+      {% for user in users %}
+        <li class="card">
+          <div style="flex: 1;">
+            <strong>{{ user.profile.name }}</strong>
+            <div class="muted">{{ user.profile.phone }}</div>
+            
+            {% if user.is_friend %}
+              <span style="color: #25D366; font-size: 0.85rem;">✓ صديق</span>
+            {% elif user.friendship %}
+              {% if user.friendship.status == 'pending' %}
+                {% if user.friendship.from_user == request.user %}
+                  <span style="color: #888; font-size: 0.85rem;">⏳ طلب معلق</span>
+                {% else %}
+                  <span style="color: #FF6B6B; font-size: 0.85rem;">📬 طلب صداقة جديد!</span>
+                {% endif %}
+              {% elif user.friendship.status == 'blocked' %}
+                <span style="color: #FF6B6B; font-size: 0.85rem;">🚫 محظور</span>
+              {% endif %}
+            {% endif %}
+          </div>
+          
+          <div class="row" style="gap: 0.5rem;">
+            <a class="btn" href="{% url 'core:dm_thread' user_id=user.id %}" title="دردشة">💬</a>
+            
+            {% if user.is_blocked %}
+              <!-- محظور -->
+              <form method="post" action="{% url 'accounts:unblock_user' user_id=user.id %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="background: #888;" title="إلغاء الحظر">🔓 إلغاء الحظر</button>
+              </form>
+            {% elif user.is_friend %}
+              <!-- صديق -->
+              <form method="post" action="{% url 'accounts:remove_friend' user_id=user.id %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="background: #FF6B6B;" title="إزالة صديق" onclick="return confirm('متأكد من إزالة هذا الصديق؟')">❌</button>
+              </form>
+            {% elif user.friendship %}
+              {% if user.friendship.status == 'pending' %}
+                {% if user.friendship.from_user == request.user %}
+                  <!-- طلب معلق مرسل -->
+                  <form method="post" action="{% url 'accounts:cancel_friend_request' friendship_id=user.friendship.id %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn" style="background: #888;" title="إلغاء الطلب">⏳ إلغاء</button>
+                  </form>
+                {% else %}
+                  <!-- طلب معلق مستلم -->
+                  <form method="post" action="{% url 'accounts:accept_friend_request' friendship_id=user.friendship.id %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn" style="background: #25D366;" title="قبول">✓ قبول</button>
+                  </form>
+                  <form method="post" action="{% url 'accounts:reject_friend_request' friendship_id=user.friendship.id %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn" style="background: #FF6B6B;" title="رفض">✗ رفض</button>
+                  </form>
+                {% endif %}
+              {% endif %}
+            {% else %}
+              <!-- لا توجد علاقة -->
+              <form method="post" action="{% url 'accounts:send_friend_request' user_id=user.id %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="background: #128C7E;" title="إضافة صديق">👥 إضافة</button>
+              </form>
+            {% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+    
+    <!-- Pagination -->
+    {% if users.has_other_pages %}
+      <div class="pagination" style="margin-top: 1.5rem; text-align: center;">
+        {% if users.has_previous %}
+          <a href="?page={{ users.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" class="btn">السابق</a>
+        {% endif %}
+        
+        <span style="margin: 0 1rem;">صفحة {{ users.number }} من {{ users.paginator.num_pages }}</span>
+        
+        {% if users.has_next %}
+          <a href="?page={{ users.next_page_number }}{% if query %}&q={{ query }}{% endif %}" class="btn">التالي</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  {% else %}
+    <p class="muted" style="text-align: center; padding: 2rem;">
+      لا يوجد مستخدمون حالياً.
+    </p>
+  {% endif %}
+  
+  <div style="margin-top: 2rem; text-align: center;">
+    <a href="{% url 'accounts:contacts_sync' %}" class="btn" style="background: #128C7E;">
+      📱 مزامنة جهات الاتصال
+    </a>
+  </div>
+</section>
+{% endblock %}
+

@@ -1,0 +1,117 @@
+{% extends 'core/base.html' %}
+{% block title %}دردشة خاصة{% endblock %}
+{% block content %}
+<div class="whatsapp-layout">
+  <aside class="chat-sidebar" style="border:1px solid var(--border); border-radius:.75rem; overflow:hidden; background:#fff;">
+    <div style="padding:.75rem 1rem; border-bottom:1px solid var(--border); font-weight:600;">الرسائل الخاصة</div>
+    <ul class="card-list" style="margin:0; border-bottom:1px solid var(--border);">
+      <li class="card" style="border-radius:0; border:0; border-bottom:1px solid var(--border);">
+        <a href="{% url 'core:dm_list' %}" style="flex:1;">عودة لقائمة الرسائل</a>
+      </li>
+    </ul>
+  </aside>
+
+  <section class="chat-area">
+    <h2 style="margin-top:0">محادثة مع: {{ other.profile.name|default:other.username }}</h2>
+    <ul id="messages" class="chat-list">
+      {% for m in messages %}
+        {% if m.author_id == request.user.id %}
+          <li class="bubble me" data-id="{{ m.id }}"><strong>أنا</strong>: {{ m.content }}<span class="meta">{{ m.created_at|time:"H:i" }}</span></li>
+        {% else %}
+          <li class="bubble" data-id="{{ m.id }}"><strong>{{ other.profile.name|default:other.username }}</strong>: {{ m.content }}<span class="meta">{{ m.created_at|time:"H:i" }}</span></li>
+        {% endif %}
+      {% empty %}
+        <li class="muted">لا رسائل بعد.</li>
+      {% endfor %}
+    </ul>
+    <form method="post" class="chat-form">
+      {% csrf_token %}
+      <input name="content" required placeholder="اكتب رسالتك">
+      <button type="submit" class="btn" role="button">إرسال</button>
+    </form>
+  </section>
+</div>
+
+<!-- Connection Status Indicator -->
+<div id="connectionStatus" class="connection-status"></div>
+
+<script>
+    const list = document.getElementById('messages');
+    const form = document.querySelector('form');
+    const statusIndicator = document.getElementById('connectionStatus');
+    
+    // WebSocket Connection for Direct Messages
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/dm/{{ other.id }}/`;
+    const chatSocket = new WebSocket(wsUrl);
+    
+    chatSocket.onopen = function() {
+      console.log('WebSocket connected for DM');
+      statusIndicator.textContent = '';
+      statusIndicator.classList.remove('disconnected');
+    };
+    
+    chatSocket.onmessage = function(e) {
+      const data = JSON.parse(e.data);
+      addMessage(data);
+    };
+    
+    chatSocket.onerror = function(error) {
+      console.error('WebSocket error:', error);
+      statusIndicator.textContent = '⚠️ خطأ في الاتصال';
+      statusIndicator.classList.add('disconnected');
+    };
+    
+    chatSocket.onclose = function() {
+      console.log('WebSocket disconnected');
+      statusIndicator.textContent = '🔄 غير متصل - إعادة الاتصال...';
+      statusIndicator.classList.add('disconnected');
+      // Reconnect after 3 seconds
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    };
+    
+    function addMessage(data) {
+      const li = document.createElement('li');
+      li.dataset.id = data.id;
+      
+      const strong = document.createElement('strong');
+      strong.textContent = data.author_name || 'مستخدم';
+      li.appendChild(strong);
+      li.appendChild(document.createTextNode(': ' + data.content));
+      
+      // Style based on author
+      const isMe = data.author === '{{ request.user.username }}' || data.author_name === 'أنا';
+      li.className = isMe ? 'bubble me new' : 'bubble new';
+      
+      const meta = document.createElement('span');
+      meta.className = 'meta';
+      try { meta.textContent = new Date(data.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); } catch {}
+      li.appendChild(meta);
+      
+      list.appendChild(li);
+      list.scrollTop = list.scrollHeight;
+      
+      // Remove 'new' class after animation
+      setTimeout(() => li.classList.remove('new'), 300);
+    }
+    
+    // Handle form submission
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const content = form.querySelector('input[name="content"]').value;
+      
+      if (content && chatSocket.readyState === WebSocket.OPEN) {
+        chatSocket.send(JSON.stringify({
+          type: 'dm_message',
+          content: content
+        }));
+        
+        form.querySelector('input[name="content"]').value = '';
+      }
+    });
+</script>
+{% endblock %}
+

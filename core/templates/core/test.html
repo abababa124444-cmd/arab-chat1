@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Test Page</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 44px 0 0 0;
+        }
+        .header {
+            background: #25D366;
+            color: white;
+            padding: 0.75rem 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .nav {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .btn {
+            background: white;
+            color: #25D366;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>Ara b Chat</div>
+            <div class="nav">
+                <a href="/" class="btn">الرئيسية</a>
+                <a href="/accounts/signup/" class="btn">إنشاء حساب</a>
+            </div>
+        </div>
+    </header>
+    
+    <main style="padding: 1rem;">
+        <h1>Test Page - Header Fixed</h1>
+        <p>يجب أن يكون هناك مسافة من الأعلى!</p>
+        <p>Header يجب أن يكون واضح ولا يمس Status Bar!</p>
+    </main>
+</body>
+</html>
+

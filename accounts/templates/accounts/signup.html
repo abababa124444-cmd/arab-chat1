@@ -1,0 +1,15 @@
+{% extends 'core/base.html' %}
+{% block title %}إنشاء حساب{% endblock %}
+{% block content %}
+<section>
+  <h2>إنشاء حساب</h2>
+  <form method="post" style="display:flex; flex-direction:column; gap:.5rem; max-width:480px;">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <label>الاسم {{ form.name }}</label>
+    <label>رقم الهاتف {{ form.phone }}</label>
+    <button type="submit">إرسال رمز التحقق عبر واتساب</button>
+  </form>
+  <p class="muted">ستصلك رسالة واتساب تحتوي على رمز تحقق صالح لمدة 5 دقائق.</p>
+</section>
+{% endblock %}
